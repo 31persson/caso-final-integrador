@@ -1,47 +1,181 @@
+#include <iostream>
 #include <vector>
-#include <string>
 #include <map>
-#include "json11.hpp" // Asegúrate de tener esta biblioteca en tu sistema
-#include "jsonlib.hpp" // No estoy seguro de qué biblioteca es esta, asegúrate de tenerla en tu sistema
-
-enum variant_type { Symbol, Number, List, Proc, Lambda, Cadena };
-
-struct Entorno;
+#include <variant>
+#include <sstream>
+#include <iomanip>
 
 class Variant {
 public:
-    typedef Variant(*proc_type) ( const std::vector<Variant>& );
-    typedef std::vector<Variant>::const_iterator iter;
-    typedef std::map<std::string, Variant> map;
+    // Definir tipos de datos que pueden ser almacenados en Variant
+    using ValueType = std::variant<int, double, std::string, std::vector<Variant>, std::map<std::string, Variant>>;
 
-    variant_type type;
-    std::string val;
-    std::vector<Variant> list;
-    proc_type proc;
-    Entorno* env;
+    // Constructores
+    Variant() = default;
+    Variant(const ValueType& value) : value_(value) {}
 
-    Variant(variant_type type = Symbol) : type(type) , env(0), proc(0) { }
-    Variant(variant_type type, const std::string& val) : type(type), val(val) , env(0) , proc(0) { }
-    Variant(proc_type proc) : type(Proc), proc(proc) , env(0) { }
+    // Métodos de conversión a cadena y formato JSON
+    std::string to_string() const;
+    std::string to_json_string() const;
 
-    std::string to_string();
-    std::string to_json_string();
-    static Variant from_json_string(std::string json);
-    static Variant parse_json(jsonlib::Json job);  // Asegúrate de que esta es la definición correcta de la función
+    // Métodos estáticos para convertir desde cadena JSON a Variant
+    static Variant from_json_string(const std::string& json);
+    static Variant parse_json(const std::string& json);
+
+private:
+    ValueType value_;
+
+    // Funciones auxiliares
+    static std::string escape_json_string(const std::string& input);
 };
 
-std::string Variant::to_string() {
-    // Tu implementación aquí
+// Implementación de los métodos
+
+std::string Variant::to_string() const {
+    if (std::holds_alternative<int>(value_)) {
+        return std::to_string(std::get<int>(value_));
+    } else if (std::holds_alternative<double>(value_)) {
+        return std::to_string(std::get<double>(value_));
+    } else if (std::holds_alternative<std::string>(value_)) {
+        return std::get<std::string>(value_);
+    } else if (std::holds_alternative<std::vector<Variant>>(value_)) {
+        std::string result = "[ ";
+        const auto& vec = std::get<std::vector<Variant>>(value_);
+        for (const auto& element : vec) {
+            result += element.to_string() + " ";
+        }
+        result += "]";
+        return result;
+    } else if (std::holds_alternative<std::map<std::string, Variant>>(value_)) {
+        std::string result = "{ ";
+        const auto& map = std::get<std::map<std::string, Variant>>(value_);
+        for (const auto& [key, val] : map) {
+            result += escape_json_string(key) + ": " + val.to_string() + ", ";
+        }
+        if (!map.empty()) {
+            // Eliminar la coma adicional al final
+            result.pop_back();
+            result.pop_back();
+        }
+        result += " }";
+        return result;
+    } else {
+        return "Unknown type";
+    }
 }
 
-std::string Variant::to_json_string() {
-    // Tu implementación aquí
+std::string Variant::to_json_string() const {
+    std::ostringstream oss;
+    oss << std::setw(4) << to_json_string();
+    return oss.str();
 }
 
-Variant Variant::from_json_string(std::string sjson) {
-    // Tu implementación aquí
+std::string Variant::escape_json_string(const std::string& input) {
+    // Escapar caracteres especiales en una cadena JSON
+    std::string result;
+    for (char c : input) {
+        switch (c) {
+            case '"':
+                result += "\\\"";
+                break;
+            case '\\':
+                result += "\\\\";
+                break;
+            case '/':
+                result += "\\/";
+                break;
+            case '\b':
+                result += "\\b";
+                break;
+            case '\f':
+                result += "\\f";
+                break;
+            case '\n':
+                result += "\\n";
+                break;
+            case '\r':
+                result += "\\r";
+                break;
+            case '\t':
+                result += "\\t";
+                break;
+            default:
+                result += c;
+                break;
+        }
+    }
+    return result;
 }
 
-Variant Variant::parse_json(jsonlib::Json job) {
-    // Tu implementación aquí
+std::string Variant::to_json_string() const {
+    if (std::holds_alternative<int>(value_)) {
+        return std::to_string(std::get<int>(value_));
+    } else if (std::holds_alternative<double>(value_)) {
+        return std::to_string(std::get<double>(value_));
+    } else if (std::holds_alternative<std::string>(value_)) {
+        return "\"" + escape_json_string(std::get<std::string>(value_)) + "\"";
+    } else if (std::holds_alternative<std::vector<Variant>>(value_)) {
+        std::string result = "[ ";
+        const auto& vec = std::get<std::vector<Variant>>(value_);
+        for (const auto& element : vec) {
+            result += element.to_json_string() + ", ";
+        }
+        if (!vec.empty()) {
+            // Eliminar la coma adicional al final
+            result.pop_back();
+            result.pop_back();
+        }
+        result += " ]";
+        return result;
+    } else if (std::holds_alternative<std::map<std::string, Variant>>(value_)) {
+        std::string result = "{ ";
+        const auto& map = std::get<std::map<std::string, Variant>>(value_);
+        for (const auto& [key, val] : map) {
+            result += "\"" + escape_json_string(key) + "\": " + val.to_json_string() + ", ";
+        }
+        if (!map.empty()) {
+            // Eliminar la coma adicional al final
+            result.pop_back();
+            result.pop_back();
+        }
+        result += " }";
+        return result;
+    } else {
+        return "Unknown type";
+    }
+}
+
+Variant Variant::from_json_string(const std::string& json) {
+    // Implementar la lógica para convertir una cadena JSON a Variant
+    // Puedes usar bibliotecas como jsoncpp o implementar tu propio analizador JSON
+
+    // Aquí, simplemente devolvemos un Variant que contiene la cadena JSON sin procesar
+    return Variant(json);
+}
+
+Variant Variant::parse_json(const std::string& json) {
+    // Implementar la lógica para convertir una cadena JSON a Variant
+    // Puedes usar bibliotecas como jsoncpp o implementar tu propio analizador JSON
+
+    // Aquí, simplemente devolvemos un Variant que contiene la cadena JSON sin procesar
+    return Variant(json);
+}
+
+int main() {
+    // Ejemplo de uso
+    Variant v1 = 42;
+    Variant v2 = 3.14;
+    Variant v3 = "Hello, World!";
+    Variant v4 = std::vector<Variant>{1, 2, 3};
+    Variant v5 = std::map<std::string, Variant>{{"key1", 10}, {"key2", "value"}};
+
+    std::cout << "v1: " << v1.to_string() << std::endl;
+    std::cout << "v2: " << v2.to_string() << std::endl;
+    std::cout << "v3: " << v3.to_string() << std::endl;
+    std::cout << "v4: " << v4.to_string() << std::endl;
+    std::cout << "v5: " << v5.to_string() << std::endl;
+
+    std::cout << "v5 (JSON): " << v5.to_json_string() << std::endl;
+
+    return 0;
 }
