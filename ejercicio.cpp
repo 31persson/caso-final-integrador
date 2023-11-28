@@ -9,7 +9,7 @@ struct Entorno;
 
 class Variant {
 public:
-    typedef Variant(*proc_type) ( const std::vector<Variant>& );
+    typedef Variant (*proc_type)(const std::vector<Variant>&);
     typedef std::vector<Variant>::const_iterator iter;
     typedef std::map<std::string, Variant> map;
 
@@ -19,17 +19,17 @@ public:
     proc_type proc;
     Entorno* env;
 
-    Variant(variant_type type = Symbol) : type(type) , env(0), proc(0) { }
-    Variant(variant_type type, const std::string& val) : type(type), val(val) , env(0) , proc(0) { }
-    Variant(proc_type proc) : type(Proc), proc(proc) , env(0) { }
+    Variant(variant_type type = Symbol) : type(type), env(0), proc(0) {}
+    Variant(variant_type type, const std::string& val) : type(type), val(val), env(0), proc(0) {}
+    Variant(proc_type proc) : type(Proc), proc(proc), env(0) {}
 
-    std::string to_string();
-    std::string to_json_string();
-    static Variant from_json_string(std::string json);
-    static Variant parse_json(jsonlib::Json job);  // Asegúrate de que esta es la definición correcta de la función
+    std::string to_string() const;
+    std::string to_json_string() const;
+    static Variant from_json_string(const std::string& sjson);
+    static Variant parse_json(const json11::Json& job);
 };
 
-std::string Variant::to_string() {
+std::string Variant::to_string() const {
     switch (type) {
         case Symbol:
         case Cadena:
@@ -54,7 +54,7 @@ std::string Variant::to_string() {
     }
 }
 
-std::string Variant::to_json_string() {
+std::string Variant::to_json_string() const {
     switch (type) {
         case Symbol:
         case Cadena:
@@ -79,12 +79,14 @@ std::string Variant::to_json_string() {
     }
 }
 
-Variant Variant::from_json_string(std::string sjson) {
+Variant Variant::from_json_string(const std::string& sjson) {
     // Implementa la lógica para convertir la cadena JSON a un objeto Variant
-    // Utiliza la biblioteca json11 o la que estés utilizando
+    // Utiliza la biblioteca json11
+    return json11::Json::parse(sjson);
 }
 
-Variant Variant::parse_json(jsonlib::Json job) {
+Variant Variant::parse_json(const json11::Json& job) {
     // Implementa la lógica para convertir un objeto Json a un objeto Variant
-    // Utiliza la biblioteca jsonlib o la que estés utilizando
+    // Utiliza la biblioteca json11
+    return Variant();  // Reemplaza esto con tu implementación real
 }
