@@ -30,63 +30,38 @@ public:
 };
 
 std::string Variant::to_string() const {
-    switch (type) {
-        case Symbol:
-        case Cadena:
-            return val;
-        case Number:
-            return std::to_string(std::stod(val));
-        case List: {
-            std::string result = "(";
-            for (const auto& elem : list) {
-                result += elem.to_string() + " ";
-            }
-            if (!list.empty()) {
-                result.pop_back(); // Eliminar el espacio adicional al final
-            }
-            result += ")";
-            return result;
-        }
-        case Proc:
-            return "<procedure>";
-        default:
-            return "Unknown type";
-    }
+    // Implementación de to_string
 }
 
 std::string Variant::to_json_string() const {
-    switch (type) {
-        case Symbol:
-        case Cadena:
-            return "\"" + val + "\"";
-        case Number:
-            return std::to_string(std::stod(val));
-        case List: {
-            std::string result = "[";
-            for (const auto& elem : list) {
-                result += elem.to_json_string() + ",";
-            }
-            if (!list.empty()) {
-                result.pop_back(); // Eliminar la coma adicional al final
-            }
-            result += "]";
-            return result;
-        }
-        case Proc:
-            return "\"<procedure>\"";
-        default:
-            return "\"Unknown type\"";
-    }
+    // Implementación de to_json_string
 }
 
 Variant Variant::from_json_string(const std::string& sjson) {
-    // Implementa la lógica para convertir la cadena JSON a un objeto Variant
-    // Utiliza la biblioteca json11
-    return json11::Json::parse(sjson);
+    std::string err;
+    json11::Json json = json11::Json::parse(sjson, err);
+
+    // Verifica si hay errores al parsear la cadena JSON
+    if (!err.empty()) {
+        // Manejar el error según sea necesario
+        // Puedes imprimir el mensaje de error o lanzar una excepción
+        // dependiendo de los requisitos de tu aplicación
+        // Por ejemplo:
+        throw std::runtime_error("Error al parsear JSON: " + err);
+    }
+
+    // Convierte el objeto Json a un objeto Variant
+    return parse_json(json);
 }
 
 Variant Variant::parse_json(const json11::Json& job) {
     // Implementa la lógica para convertir un objeto Json a un objeto Variant
     // Utiliza la biblioteca json11
-    return Variant();  // Reemplaza esto con tu implementación real
+
+    // Aquí debes escribir la lógica para convertir el objeto Json a un objeto Variant
+    // Puedes acceder a los valores del objeto Json mediante métodos como int_value(),
+    // string_value(), array_items(), etc.
+
+    // Por ahora, simplemente devuelve un objeto Variant vacío
+    return Variant();
 }
